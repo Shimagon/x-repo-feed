@@ -76,7 +76,9 @@ async function fetchTimeline() {
 
       const ctxEl = a.querySelector('[data-testid="socialContext"]');
       const ctxText = (ctxEl?.textContent || '').trim();
-      const isRepost = /repost|retweet|リポスト|リツイート/i.test(ctxText) && ctxText.toLowerCase().includes(viewer.toLowerCase());
+      // On the user's own profile, socialContext indicates a repost.
+      // Don't require the username inside ctxText — X sometimes drops it.
+      const isRepost = /repost|retweet|リポスト|リツイート/i.test(ctxText);
 
       const tweetText = (a.querySelector('[data-testid="tweetText"]')?.textContent || '').trim();
 
@@ -134,6 +136,14 @@ async function main() {
   const seen = new Set(state.processed_ids);
   const tweets = await fetchTimeline();
   console.log(`Fetched ${tweets.length} tweets from profile`);
+  const repostCount = tweets.filter(t => t.isRepost).length;
+  const ghCount = tweets.filter(t => t.githubMatches.length > 0).length;
+  console.log(`  reposts detected: ${repostCount}, with github URL: ${ghCount}`);
+  if (process.env.DEBUG === '1') {
+    for (const t of tweets) {
+      console.log(`  tweet ${t.id} repost=${t.isRepost} ctx="${t.ctxText}" gh=${t.githubMatches.length}`);
+    }
+  }
 
   const candidates = tweets
     .filter(t => t.isRepost && t.githubMatches.length > 0)
