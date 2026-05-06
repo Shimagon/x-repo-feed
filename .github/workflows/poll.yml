@@ -1,0 +1,49 @@
+name: poll-x-reposts
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: poll-x-reposts
+  cancel-in-progress: false
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npx playwright install --with-deps chromium
+
+      - run: node scripts/poll.mjs
+        env:
+          X_USERNAME: ${{ secrets.X_USERNAME }}
+          X_AUTH_TOKEN: ${{ secrets.X_AUTH_TOKEN }}
+          X_CT0: ${{ secrets.X_CT0 }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          FORWARD_TO: ${{ secrets.FORWARD_TO }}
+
+      - name: Commit state
+        run: |
+          if [[ -n "$(git status --porcelain state.json)" ]]; then
+            git config user.name "x-repo-feed-bot"
+            git config user.email "bot@local"
+            git add state.json
+            git commit -m "state: $(date -u +%Y-%m-%dT%H:%MZ)"
+            git push
+          else
+            echo "No state change."
+          fi
