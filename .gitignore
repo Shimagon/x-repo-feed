@@ -3,3 +3,5 @@ node_modules/
 .env.local
 *.png
 .DS_Store
+__pycache__/
+*.pyc
