@@ -18,16 +18,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-python@v5
         with:
-          node-version: 22
-          cache: npm
+          python-version: "3.12"
+          cache: pip
 
-      - run: npm ci
+      - run: pip install "scrapling[all]>=0.4.7"
 
-      - run: npx playwright install --with-deps chromium
+      - run: scrapling install --force
 
-      - run: node scripts/poll.mjs
+      - run: python scripts/poll.py
         env:
           X_USERNAME: ${{ secrets.X_USERNAME }}
           X_AUTH_TOKEN: ${{ secrets.X_AUTH_TOKEN }}
